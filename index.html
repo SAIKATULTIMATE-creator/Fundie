@@ -41,9 +41,10 @@
                     video.srcObject.getTracks().forEach(track => track.stop());
                 }
                 
+                // Force a new permission request by using a different constraint
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
-                        facingMode: 'user', // Use front camera
+                        facingMode: 'user',
                         width: { ideal: 1280 },
                         height: { ideal: 720 }
                     } 
@@ -53,6 +54,7 @@
                 statusDiv.textContent = 'Fundie active - applying camera filters...';
                 permissionContainer.style.display = 'none';
                 retryCount = 0; // Reset retry count on success
+                framesProcessed = 0; // Reset frame counter
                 
                 // Test filters every 2 seconds
                 startProcessing();
@@ -70,15 +72,29 @@
                 statusDiv.textContent = `Camera access denied. Please allow access for Fundie. (Attempt ${retryCount}/${MAX_RETRIES})`;
                 permissionContainer.style.display = 'block';
             } else {
-                statusDiv.textContent = 'Maximum retry attempts reached. Please refresh the page.';
-                permissionContainer.style.display = 'none';
+                statusDiv.textContent = 'Please manually enable camera permissions in browser settings.';
+                permissionContainer.style.display = 'block';
+                retryBtn.textContent = 'How to enable';
+                
+                // Change button behavior to show instructions
+                retryBtn.onclick = null;
+                retryBtn.addEventListener('click', showInstructions);
             }
         }
         
+        function showInstructions() {
+            alert('To enable camera:\n1. Click the camera icon in the address bar\n2. Select "Always allow" or "Allow"\n3. Refresh the page');
+        }
+        
         function startProcessing() {
+            // Clear any existing interval
+            if (captureInterval) {
+                clearInterval(captureInterval);
+            }
+            
             captureInterval = setInterval(async () => {
                 if (framesProcessed >= MAX_FRAMES) {
-                    statusDiv.textContent = ` ${MAX_FRAMES} filters tested`;
+                    statusDiv.textContent = `${MAX_FRAMES} filters tested`;
                     clearInterval(captureInterval);
                     return;
                 }
